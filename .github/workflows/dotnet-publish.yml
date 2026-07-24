@@ -1,0 +1,81 @@
+name: Build, Test, and Release
+
+on:
+  push:
+    branches: [ "master" ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch: 
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Run Tests
+      run: dotnet test --configuration Release
+
+  release:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows
+          - rid: win-x86
+            os: windows
+          - rid: linux-x64
+            os: linux
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    # Build the CLI Example tool as a Self-Contained executable
+    # I should really sleep more...
+    # Got it, never use paths in workflows.
+    # Or maybe use paths?
+    - name: Publish CLI Tool
+      run: |
+        dotnet publish ./Mp3ParserCliExample/Mp3ParserCliExample.csproj \
+          --configuration Release \
+          --runtime ${{ matrix.rid }} \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          --output ./publish/${{ matrix.rid }}
+
+    - name: Pack Library
+      run: dotnet pack -p:TargetProject=KenobiMP3Parser --configuration Release --output ./publish/artifacts
+      
+    - name: Package Binaries
+      shell: bash
+      run: |
+        cd publish/${{ matrix.rid }}
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          zip -r ../artifacts/Mp3ParserCliExample-${{ matrix.rid }}.zip .
+        else
+          tar -czf ../artifacts/Mp3ParserCliExample-${{ matrix.rid }}.tar.gz .
+        fi
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: publish/artifacts/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

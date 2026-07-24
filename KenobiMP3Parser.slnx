@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.MD" />
+  </Folder>
+  <Project Path="KenobiMP3Parser/KenobiMp3Parser.csproj" />
+  <Project Path="Mp3ParserCliExample/Mp3ParserCliExample.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
