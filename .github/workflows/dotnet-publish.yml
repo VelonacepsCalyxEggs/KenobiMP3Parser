@@ -49,9 +49,10 @@ jobs:
     # Build the CLI Example tool as a Self-Contained executable
     # I should really sleep more...
     # Got it, never use paths in workflows.
+    # Or maybe use paths?
     - name: Publish CLI Tool
       run: |
-        dotnet publish -p:TargetProject=Mp3ParserCliExample \
+        dotnet publish ./Mp3ParserCliExample/Mp3ParserCliExample.csproj \
           --configuration Release \
           --runtime ${{ matrix.rid }} \
           --self-contained true \
@@ -61,11 +62,7 @@ jobs:
 
     - name: Pack Library
       run: dotnet pack -p:TargetProject=KenobiMP3Parser --configuration Release --output ./publish/artifacts
-
-
-
-
-
+      
     - name: Package Binaries
       shell: bash
       run: |
