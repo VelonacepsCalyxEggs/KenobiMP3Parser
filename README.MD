@@ -15,7 +15,6 @@ I have also supplied an example CLI tool to go with it, because I felt it would 
 It should run on almost any OS, I have attached binaries in Releases, but you may also compile it yourself, you just need .NET 10 and a bit of knowledge of how to use VS/Rider to launch/publish code.
 
 ## Contributing
-Contributions are welcome, I am definitely not an expert in deep C# memory management, and there is plenty of room for improvement. 
 
 If you want to contribute, please do, I am certainly not an expert in the deep parts of C# like Memory management, and there are things that I want to improve around the script, that I didn't yet get my hands on.
 There are comments lying around that I feel should describe my line of thought while I was writing it.
