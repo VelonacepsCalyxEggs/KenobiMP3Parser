@@ -47,18 +47,20 @@ jobs:
         dotnet-version: '10.0.x'
 
     # Build the CLI Example tool as a Self-Contained executable
+    # I should really sleep more...
     - name: Publish CLI Tool
       run: |
-        dotnet publish Mp3ParserCliExample/Mp3ParserCliExample/Mp3ParserCliExample.csproj \
+        dotnet publish Mp3ParserCliExample/Mp3ParserCliExample.csproj \
           --configuration Release \
           --runtime ${{ matrix.rid }} \
           --self-contained true \
           -p:PublishSingleFile=true \
           -p:PublishTrimmed=true \
           --output ./publish/${{ matrix.rid }}
-
+          
     - name: Pack Library
       run: dotnet pack KenobiMP3Parser/KenobiMP3Parser/KenobiMP3Parser.csproj --configuration Release --output ./publish/artifacts
+
 
 
 
