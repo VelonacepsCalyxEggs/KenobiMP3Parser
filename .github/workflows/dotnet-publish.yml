@@ -49,7 +49,7 @@ jobs:
     # Build the CLI Example tool as a Self-Contained executable
     - name: Publish CLI Tool
       run: |
-        dotnet publish **/Mp3ParserCliExample.csproj \
+        dotnet publish Mp3ParserCliExample/Mp3ParserCliExample/Mp3ParserCliExample.csproj \
           --configuration Release \
           --runtime ${{ matrix.rid }} \
           --self-contained true \
@@ -58,7 +58,8 @@ jobs:
           --output ./publish/${{ matrix.rid }}
 
     - name: Pack Library
-      run: dotnet pack **/KenobiMP3Parser.csproj --configuration Release --output ./publish/artifacts
+      run: dotnet pack KenobiMP3Parser/KenobiMP3Parser/KenobiMP3Parser.csproj --configuration Release --output ./publish/artifacts
+
 
 
     - name: Package Binaries
