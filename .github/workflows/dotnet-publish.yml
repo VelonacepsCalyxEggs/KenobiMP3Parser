@@ -28,17 +28,11 @@ jobs:
 
       - name: Run Tests
         run: dotnet test --configuration Release
-
-  release-and-publish:
+        
+  build-artifacts:
     needs: test
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
-    
-    # Crucial: Must grant write permissions for OIDC to communicate with NuGet
-    permissions:
-      id-token: write
-      contents: write
-
     strategy:
       matrix:
         include:
@@ -81,10 +75,31 @@ jobs:
             tar -czf ../artifacts/Mp3ParserCliExample-${{ matrix.rid }}.tar.gz .
           fi
 
+      - name: Upload Intermediary Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files-${{ matrix.rid }}
+          path: publish/artifacts/*
+          retention-days: 1
+
+  release-and-publish:
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./all-artifacts
+          pattern: release-files-*
+          merge-multiple: true
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: publish/artifacts/*
+          files: ./all-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
@@ -94,7 +109,7 @@ jobs:
     
       - name: NuGet push
         run: |
-          dotnet nuget push "./publish/artifacts/*.nupkg" \
+          dotnet nuget push "./all-artifacts/*.nupkg" \
             --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
             --source https://nuget.org \
             --skip-duplicate
