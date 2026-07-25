@@ -10,10 +10,10 @@ namespace KenobiMp3Parser
         public static class Mp3MetadataParser
         {
             private const int MaxFailedFrames = 1024;
-            const int MaxStackAllocSize = 2048;
             private const int MaxConsecutiveFailedFrames = 6;
+            private const int MaxStackAllocSize = 2048;
 
-            public static int GetMp3Bitrate(int bitrateIndex, int version, int layer)
+            private static int GetMp3Bitrate(int bitrateIndex, int version, int layer)
             {
                 if (bitrateIndex <= 0 || bitrateIndex >= 15) return -1;
 
@@ -33,7 +33,7 @@ namespace KenobiMp3Parser
                 return Mp3BitrateTable[bitrateIndex, column];
             }
 
-            public static int GetMp3SamplesPerFrame(int version, int layer)
+            private static int GetMp3SamplesPerFrame(int version, int layer)
             {
                 int column = -1;
                 int row = -1;
@@ -51,7 +51,7 @@ namespace KenobiMp3Parser
 
                 return Mp3SamplesPerFrameTable[row, column];
             }
-            public static int GetMp3SampleRate(int sampleRateIndex, int version)
+            private static int GetMp3SampleRate(int sampleRateIndex, int version)
             {
                 if (sampleRateIndex < 0 || sampleRateIndex >= 3) return -1;
                 int column = -1;
@@ -129,7 +129,7 @@ namespace KenobiMp3Parser
                     FrameSize = frameSize,
                 };
             }
-            public static int ReadSynchsafeInt32(byte[] bytes)
+            private static int ReadSynchsafeInt32(byte[] bytes)
             {
                 if (bytes.Length < 4) throw new ArgumentException($"Needs four or more bytes, passed {bytes.Length}");
 
@@ -138,7 +138,7 @@ namespace KenobiMp3Parser
                         (bytes[2] << 7) | // 7 * 1
                         bytes[3];
             }
-            public static int ReadSynchsafeInt32(Span<byte> bytes)
+            private static int ReadSynchsafeInt32(Span<byte> bytes)
             {
                 if (bytes.Length < 4) throw new ArgumentException($"Needs four or more bytes, passed {bytes.Length}");
 
@@ -151,7 +151,7 @@ namespace KenobiMp3Parser
             private static Mp3Header ReadMp3Header(Stream stream)
             {
                 if (!CheckIfMp3(stream, 3))
-                    throw new ArgumentException("Cannot parse a non MP3 file with an MP3 parser.");
+                    throw new NotSupportedException("Cannot parse a non MP3 file with an MP3 parser."); 
                 //Console.WriteLine("ID3 Header: " + Convert.ToHexString(id3Header));
                 Span<byte> vrf = stackalloc byte[3]; // version, revision, flags.
                 stream.ReadExactly(vrf);
@@ -405,7 +405,8 @@ namespace KenobiMp3Parser
                 return Encoding.Unicode.GetString(data.Slice(2));
             }
         /// <summary>
-        /// 
+        /// Parses the MP3 file, requires a seekable file stream to be passed into it.
+        /// Recommend to use a FileStream with sequential read + wrap it in a buffered stream for better performance.
         /// </summary>
         /// <param name="stream"></param>
         /// <exception cref="InvalidDataException"
@@ -415,10 +416,8 @@ namespace KenobiMp3Parser
         /// <returns></returns>
         public static Mp3FileInfo ParseMP3File(Stream stream)
             {
-                stream.Position = 0;
                 Mp3Header header = ReadMp3Header(stream);
                 stream.Position = header.HeaderSize; // all frames + 10 header bytes
-                                                     //using IncrementalHash md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
                 var xxHash = new XxHash64();
                 int b;
                 int failedFrames = 0;
@@ -537,7 +536,13 @@ namespace KenobiMp3Parser
                     Duration = TimeSpan.FromSeconds(framesRead * (double)prevFrame.SamplesPerFrame / prevFrame.SampleRate)
                 };
             }
-            
+            /// <summary>
+            /// Used to detect if the given stream is an MP3 file by reading the header (magic bytes).
+            /// If you are going to pass it into ParseMP3File later, make sure to set jumpTo to 0, because it expects the stream to be at position 0.
+            /// </summary>
+            /// <param name="stream"></param>
+            /// <param name="jumpTo"></param>
+            /// <returns></returns>
             public static bool CheckIfMp3(Stream stream, int jumpTo = 0)
             {
                 Span<byte> id3Header = stackalloc byte[3];

@@ -7,6 +7,8 @@ namespace Mp3ParserCliExample
     {
         static bool quiet = false;
         static bool showTime = false;
+        static bool byExtension = false;
+        static bool isRecursive = false;
         static string? outputFilePath = null;
         static StreamWriter? outputWriter = null;
 
@@ -30,6 +32,14 @@ namespace Mp3ParserCliExample
                 else if (arg == "-t" || arg == "--time")
                 {
                     showTime = true;
+                }
+                else if (arg == "-e" || arg == "--extension")
+                {
+                    byExtension = true;
+                }
+                else if (arg == "-r" || arg == "--recursive")
+                {
+                    isRecursive = true;
                 }
                 else if (arg == "-o" || arg == "--output")
                 {
@@ -117,13 +127,6 @@ namespace Mp3ParserCliExample
                 using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
                 using var bs = new BufferedStream(fs, 1024 * 1024);
 
-                bool isMp3 = Mp3MetadataParser.CheckIfMp3(bs);
-                if (!isMp3)
-                {
-                    // non MP3 file
-                    return;
-                }
-
                 totalMp3++;
                 var sw = showTime ? Stopwatch.StartNew() : null;
 
@@ -148,14 +151,26 @@ namespace Mp3ParserCliExample
         {
             WriteLine($"Scanning directory: {directoryPath}");
             WriteLine(new string('-', 60));
-
-            var allFiles = Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories);
-
-            foreach (var file in allFiles)
+            try
             {
-                ProcessSingleFile(file, ref totalFiles, ref totalMp3, ref totalErrors);
-            }
+                var allFiles = Directory.EnumerateFiles(directoryPath, byExtension ? "*.mp3" : "*", isRecursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
 
+                foreach (var file in allFiles)
+                {
+                    try
+                    {
+                        ProcessSingleFile(file, ref totalFiles, ref totalMp3, ref totalErrors);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        WriteError($"Access was denied to file: {file}");
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                WriteError($"Access was denied to directory: {directoryPath}");
+            }
             WriteLine(new string('-', 60));
         }
 
@@ -177,21 +192,23 @@ namespace Mp3ParserCliExample
         static void PrintHelp()
         {
             string help = @"
-Mp3ParserCli – test tool for KenobiMp3Parser
+Mp3ParserCliExample – test tool for KenobiMp3Parser
 
 Usage:
-  Mp3ParserCli [options] <path1> [path2 ...]
+  Mp3ParserCliExample [options] <path1> [path2 ...]
 
 Options:
   -q, --quiet        Suppress all normal output (only errors are printed).
   -t, --time         Show elapsed time for each file and total time.
+  -e, --extension    Will only scan files with *.mp3 pattern in the name, if parsing folders.
+  -r, --recursive    Only works if parsing a folder. Controls whenever it will walk through subfolders of the supplied directory.
   -o, --output FILE  Write all output (including errors) to FILE.
   -h, --help         Show this help message.
 
 Examples:
-  Mp3ParserCli song.mp3
-  Mp3ParserCli -t -o results.txt music_folder/
-  Mp3ParserCli -q -t file1.mp3 file2.mp3
+  Mp3ParserCliExample song.mp3
+  Mp3ParserCliExample -t -o results.txt /path/to/music/dir/
+  Mp3ParserCliExample -q -t file1.mp3 file2.mp3
 ";
             Console.WriteLine(help);
         }
