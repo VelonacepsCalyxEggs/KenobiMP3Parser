@@ -9,6 +9,8 @@ It is lightweight, albeit a bit unfinished and lacks some obscure features, I wr
 made, learned a bunch of cursed stuff. Currently does not parse all possible Tags, but has support for essential ones. 
 Utilizes Span<byte> and stackalloc in some places to be fast and reduce strain on the GC.
 
+I exported it from my website's backend repository into a standalone one, for ease of management and well, maybe someone will actually use it for something similar, who knows.
+
 ## CLI Tool & Installation
 
 I have also supplied an example CLI tool to go with it, because I felt it would be a great thing to have, since I made it a separate library.
