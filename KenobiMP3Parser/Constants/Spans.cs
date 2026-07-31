@@ -5,6 +5,7 @@
         // Magic stuff, big endian
         public static ReadOnlySpan<byte> ID3_MAGIC_SPAN => "ID3"u8;
         public static ReadOnlySpan<byte> TAG_MAGIC_SPAN => "TAG"u8;
+        public static ReadOnlySpan<byte> MP3_SYNC_SIG => [0xFF, 0xFB];
 
         // Metadata Magics
         public static ReadOnlySpan<byte> TIT2_MAGIC_SPAN => "TIT2"u8; // title

@@ -4,9 +4,9 @@ namespace KenobiMp3Parser.Classes
 {
     public readonly record struct Mp3Frame
     {
-        public readonly Mp3Layer Layer { get; init; }
-        public readonly Mp3Version Version { get; init; }
-        public readonly bool HasCrc { get; init; }
+        public Mp3Layer Layer { get; init; }
+        public Mp3Version Version { get; init; }
+        public bool HasCrc { get; init; }
         public int Padding { get; init; }
         public int Bitrate { get; init; }
         public int SampleRate { get; init; }

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using KenobiMp3Parser;
+using KenobiMp3Parser.Exceptions;
 
 namespace Mp3ParserCliExample
 {
@@ -9,6 +10,7 @@ namespace Mp3ParserCliExample
         static bool showTime = false;
         static bool byExtension = false;
         static bool isRecursive = false;
+        static bool isVerbose = false;
         static string? outputFilePath = null;
         static StreamWriter? outputWriter = null;
 
@@ -40,6 +42,10 @@ namespace Mp3ParserCliExample
                 else if (arg == "-r" || arg == "--recursive")
                 {
                     isRecursive = true;
+                }
+                else if (arg == "-v" || arg == "--verbose")
+                {
+                    isVerbose = true;
                 }
                 else if (arg == "-o" || arg == "--output")
                 {
@@ -130,7 +136,7 @@ namespace Mp3ParserCliExample
                 totalMp3++;
                 var sw = showTime ? Stopwatch.StartNew() : null;
 
-                var data = Mp3MetadataParser.ParseMP3File(bs);
+                var data = Mp3MetadataParser.ParseMP3File(bs, !byExtension);
                 sw?.Stop();
 
                 string resultLine = $"File: {filePath}{Environment.NewLine}{data}";
@@ -142,8 +148,18 @@ namespace Mp3ParserCliExample
             }
             catch (Exception ex)
             {
+                if (isVerbose)
+                {
+                    if (ex is InvalidHeaderException exv)
+                    {
+                        WriteError($"Error processing {filePath}: {exv.Message} : At position {exv.FailedPosition} : Header Hex {Convert.ToHexString(exv.FailedBytes)}");
+                    }
+                }
+                else
+                {
+                    WriteError($"Error processing {filePath}: {ex.Message}");
+                }
                 totalErrors++;
-                WriteError($"Error processing {filePath}: {ex.Message}");
             }
         }
 
@@ -202,6 +218,7 @@ Options:
   -t, --time         Show elapsed time for each file and total time.
   -e, --extension    Will only scan files with *.mp3 pattern in the name, if parsing folders.
   -r, --recursive    Only works if parsing a folder. Controls whenever it will walk through subfolders of the supplied directory.
+  -v, --verbose      Displays more information about errors.
   -o, --output FILE  Write all output (including errors) to FILE.
   -h, --help         Show this help message.
 
