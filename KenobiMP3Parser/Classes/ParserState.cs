@@ -4,7 +4,7 @@ using System.Text;
 
 namespace KenobiMp3Parser.Classes
 {
-    internal ref struct ParserState
+    internal record struct ParserState
     {
         public int FailedFrames;
         public int FailedFramesConsecutive;

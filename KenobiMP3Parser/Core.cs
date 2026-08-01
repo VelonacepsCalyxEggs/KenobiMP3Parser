@@ -1,10 +1,12 @@
-﻿using System.Buffers.Binary;
+﻿using KenobiMp3Parser.Classes;
+using KenobiMp3Parser.Constants;
+using KenobiMp3Parser.Exceptions;
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO.Hashing;
 using System.Text;
-using System.Diagnostics;
-using KenobiMp3Parser.Exceptions;
-using KenobiMp3Parser.Classes;
 using static KenobiMp3Parser.Constants.Spans;
+using static KenobiMp3Parser.Constants.Uints;
 using static KenobiMp3Parser.Constants.Tables;
 namespace KenobiMp3Parser
 {
@@ -118,9 +120,9 @@ namespace KenobiMp3Parser
             }
             else // Layer II и Layer III
             {
-                frameSize = (144 * bitrate / sampleRate) + padding;
+                frameSize = ((samplesPerFrame / 8) * bitrate / sampleRate) + padding;
             }
-            stream.Position -= 4;
+            //stream.Position -= 4;
             return new Mp3Frame
             {
                 Version = version,
@@ -193,7 +195,7 @@ namespace KenobiMp3Parser
             stream.ReadExactly(tagSize);
 
             int framesSize = ReadSynchsafeInt32(tagSize);
-            int endPosition = (int)stream.Position + framesSize;
+            long endPosition = stream.Position + framesSize;
             // Read frames.
 #if DEBUG
             sw.Stop();
@@ -206,10 +208,12 @@ namespace KenobiMp3Parser
             //Console.WriteLine($"All size: {framesSize}");
             if (vByte == 0b100 || vByte == 0b011)
             {
+                //ParseIDv234TagsUint(stream, metadata, endPosition, vByte);
                 ParseIDv234Tags(stream, metadata, endPosition, vByte);
             }
             else
             {
+                //ParseIDv22TagsUint(stream, metadata, endPosition, vByte);
                 ParseIDv22Tags(stream, metadata, endPosition, vByte);
             }
 #if DEBUG
@@ -239,7 +243,7 @@ namespace KenobiMp3Parser
                     }
                     else stream.Position -= 4;
                 }
-                string strTagId = Encoding.ASCII.GetString(tagId);
+                //string strTagId = Encoding.ASCII.GetString(tagId);
                 int frameSize = GetHeaderFrameDataSize(stream, vByte);
                 //Console.WriteLine($"Frame size: {frameSize}");
 
@@ -301,7 +305,7 @@ namespace KenobiMp3Parser
                     }
                     else stream.Position -= 5;
                 }
-                string strTagId = Encoding.ASCII.GetString(tagId);
+                //string strTagId = Encoding.ASCII.GetString(tagId);
                 //Console.WriteLine(strTagId);
                 int frameSize = GetHeaderFrameDataSize(stream, vByte);
                 // Console.WriteLine($"Frame size: {frameSize}");
@@ -348,6 +352,165 @@ namespace KenobiMp3Parser
                     metadata.Key = GetDataFromTextHeaderFrame(stream, frameSize, tagId);
                 else
                     stream.Position += frameSize;
+            }
+        }
+        private static void ParseIDv22TagsUint(Stream stream, IDv2Metadata metadata, long endPosition, int vByte)
+        {
+            while (stream.Position < endPosition)
+            {
+                Span<byte> tagIdBuffer = stackalloc byte[4];
+                stream.ReadExactly(tagIdBuffer.Slice(1, 3));
+                uint tagId = BinaryPrimitives.ReadUInt32BigEndian(tagIdBuffer);
+
+                if (tagId == ZERO_UINT)
+                    break;   // padding reached
+
+                int frameSize = GetHeaderFrameDataSize(stream, vByte);
+
+                switch (tagId)
+                {
+                    case TT2_MAGIC_UINT:
+                        metadata.Title = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TP1_MAGIC_UINT:
+                        metadata.Artists = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId, false)
+                                            .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                        break;
+                    case TP2_MAGIC_UINT:
+                        metadata.Artists2 = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId, false)
+                                             .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                        break;
+                    case TAL_MAGIC_UINT:
+                        metadata.Album = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TEN_MAGIC_UINT:
+                        metadata.EncodedBy = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCR_MAGIC_UINT:
+                        metadata.Copyright = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TP3_MAGIC_UINT:
+                        metadata.Conductor = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TRK_MAGIC_UINT:
+                        metadata.TrackNumber = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPA_MAGIC_UINT:
+                        metadata.DiscNumber = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCO_MAGIC_UINT:
+                        metadata.Genre = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TRC_MAGIC_UINT:
+                        metadata.ISRC = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCM_MAGIC_UINT:
+                        metadata.Composer = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TYE_MAGIC_UINT:
+                        metadata.Year = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TSS_MAGIC_UINT:
+                        metadata.EncoderSettings = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TLA_MAGIC_UINT:
+                        metadata.Language = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPB_MAGIC_UINT:
+                        metadata.Publisher = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TBP_MAGIC_UINT:
+                        metadata.BPM = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TKE_MAGIC_UINT:
+                        metadata.Key = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    default:
+                        stream.Position += frameSize;
+                        break;
+                }
+            }
+        }
+
+        private static void ParseIDv234TagsUint(Stream stream, IDv2Metadata metadata, long endPosition, int vByte)
+        {
+            while (stream.Position < endPosition)
+            {
+                Span<byte> tagIdBuffer = stackalloc byte[4];
+                stream.ReadExactly(tagIdBuffer);
+                uint tagId = BinaryPrimitives.ReadUInt32BigEndian(tagIdBuffer);
+
+                if (tagId == ZERO_UINT)
+                    break;
+
+                int frameSize = GetHeaderFrameDataSize(stream, vByte);
+                stream.Position += 2; // Skip flags
+
+                switch (tagId)
+                {
+                    case TIT2_MAGIC_UINT:
+                        metadata.Title = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPE1_MAGIC_UINT:
+                        metadata.Artists = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId, false)
+                                            .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                        break;
+                    case TPE2_MAGIC_UINT:
+                        metadata.Artists2 = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId, false)
+                                             .Split('\0', StringSplitOptions.RemoveEmptyEntries);
+                        break;
+                    case TRCK_MAGIC_UINT:
+                        metadata.TrackNumber = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TALB_MAGIC_UINT:
+                        metadata.Album = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCON_MAGIC_UINT:
+                        metadata.Genre = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TYER_MAGIC_UINT:
+                        metadata.Year = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TDRC_MAGIC_UINT:
+                        metadata.Year = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPUB_MAGIC_UINT:
+                        metadata.Publisher = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TSRC_MAGIC_UINT:
+                        metadata.ISRC = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCOP_MAGIC_UINT:
+                        metadata.Copyright = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPE3_MAGIC_UINT:
+                        metadata.Conductor = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TENC_MAGIC_UINT:
+                        metadata.EncodedBy = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TPOS_MAGIC_UINT:
+                        metadata.DiscNumber = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TCOM_MAGIC_UINT:
+                        metadata.Composer = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TSSE_MAGIC_UINT:
+                        metadata.EncoderSettings = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TLAN_MAGIC_UINT:
+                        metadata.Language = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TBPM_MAGIC_UINT:
+                        metadata.BPM = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    case TKEY_MAGIC_UINT:
+                        metadata.Key = GetDataFromTextHeaderFrameUint(stream, frameSize, tagId);
+                        break;
+                    default:
+                        stream.Position += frameSize;
+                        break;
+                }
             }
         }
         private static int GetHeaderFrameDataSize(Stream stream, int id3Version)
@@ -418,7 +581,52 @@ namespace KenobiMp3Parser
 
             return result.Trim();
         }
+        private static string GetDataFromTextHeaderFrameUint(Stream stream, int frameSize, uint tagId, bool removeNullTerminators = true)
+        {
+            if (frameSize <= 0)
+                return string.Empty;
 
+            if (frameSize > 2048)
+            {
+                throw new ArgumentOutOfRangeException($"Someone is trying to store War and Peace in the MP3 tags... One text frame was more than 2048 bytes.");
+            }
+
+            // If frame size is small, allocate on stack. If large, allocate on the heap.
+            Span<byte> buffer = frameSize <= MaxStackAllocSize
+                ? stackalloc byte[frameSize]
+                : new byte[frameSize];
+
+            stream.ReadExactly(buffer);
+
+            byte encodingByte = buffer[0];
+            ReadOnlySpan<byte> textData = buffer.Slice(1);
+
+            string result = encodingByte switch
+            {
+                0x00 => // ISO-8859-1
+                    Encoding.GetEncoding("ISO-8859-1").GetString(textData),
+
+                0x01 => // UTF-16 with BOM (Handles both Big and Little Endian)
+                    ParseUtf16WithBom(textData),
+
+                0x02 => // UTF-16BE without BOM
+                    Encoding.BigEndianUnicode.GetString(textData),
+
+                0x03 => // UTF-8
+                    Encoding.UTF8.GetString(textData),
+
+                _ =>    // Fallback
+                    Encoding.ASCII.GetString(textData)
+            };
+
+            // check if \0 exists and replace.
+            if (removeNullTerminators && result.Contains('\0')) // TODO: This should be done on the Span instead of a string to optimize.
+            {
+                result = result.Replace("\0", string.Empty);
+            }
+
+            return result.Trim();
+        }
         private static string ParseUtf16WithBom(ReadOnlySpan<byte> data)
         {
             if (data.Length < 2)

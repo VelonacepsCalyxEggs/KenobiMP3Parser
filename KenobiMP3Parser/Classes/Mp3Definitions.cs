@@ -55,7 +55,7 @@ namespace KenobiMp3Parser.Classes
         }
     }
 
-    public class IDv2Metadata
+    public record class IDv2Metadata
     {
         public bool IsFilled() => Title != null && Artists != null && Album != null;
         public string? Title { get; set; }

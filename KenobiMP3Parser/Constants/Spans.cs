@@ -5,7 +5,7 @@
         // Magic stuff, big endian
         public static ReadOnlySpan<byte> ID3_MAGIC_SPAN => "ID3"u8;
         public static ReadOnlySpan<byte> TAG_MAGIC_SPAN => "TAG"u8;
-        public static ReadOnlySpan<byte> MP3_SYNC_SIG => [0xFF, 0xFB];
+        public static ReadOnlySpan<byte> MP3_SYNC_SIG_SPAN => [0xFF, 0xFB];
 
         // Metadata Magics
         public static ReadOnlySpan<byte> TIT2_MAGIC_SPAN => "TIT2"u8; // title
@@ -122,6 +122,131 @@
 
         public static ReadOnlySpan<byte> ZERO_SPAN_4 => [0, 0, 0, 0];
         public static ReadOnlySpan<byte> ZERO_SPAN_3 => [0, 0, 0];
+
+        // Probably more to come?...
+    }
+    internal static class Uints
+    {
+        // Magic stuff, big endian
+        public const uint ID3_MAGIC_UINT = 0x49443300;      // "ID3"
+        public const uint TAG_MAGIC_UINT = 0x54414700;      // "TAG"
+        public const uint MP3_SYNC_SIG_UINT = 0xFFFB0000;   // 0xFF, 0xFB
+
+        // Metadata Magics
+        public const uint TIT2_MAGIC_UINT = 0x54495432;    // "TIT2" - title
+        public const uint TPE1_MAGIC_UINT = 0x54504531;    // "TPE1" - artist 1: blue shift
+        public const uint TPE2_MAGIC_UINT = 0x54504532;    // "TPE2" - artist 2: electric boogaloo
+        public const uint TPE3_MAGIC_UINT = 0x54504533;    // "TPE3" - artists 3: A.K.A Conductor
+        public const uint TALB_MAGIC_UINT = 0x54414C42;    // "TALB" - album
+        public const uint TCOP_MAGIC_UINT = 0x54434F50;    // "TCOP" - copyrighted by
+        public const uint TENC_MAGIC_UINT = 0x54454E43;    // "TENC" - encoded by
+        public const uint TRCK_MAGIC_UINT = 0x5452434B;    // "TRCK" - track number
+        public const uint TPOS_MAGIC_UINT = 0x54504F53;    // "TPOS" - disc number
+        public const uint TCON_MAGIC_UINT = 0x54434F4E;    // "TCON" - genre
+        public const uint TCOM_MAGIC_UINT = 0x54434F4D;    // "TCOM" - composer
+        public const uint TYER_MAGIC_UINT = 0x54594552;    // "TYER" - year
+        public const uint TDRC_MAGIC_UINT = 0x54445243;    // "TDRC" - year but for 2.4
+        public const uint TXXX_MAGIC_UINT = 0x54585858;    // "TXXX" - other things...?
+        public const uint TSSE_MAGIC_UINT = 0x54535345;    // "TSSE" - encoder settings.
+        public const uint APIC_MAGIC_UINT = 0x41504943;    // "APIC" - an image attachment...
+        public const uint TLAN_MAGIC_UINT = 0x544C414E;    // "TLAN" - language.
+        public const uint TPUB_MAGIC_UINT = 0x54505542;    // "TPUB" - Publisher
+        public const uint TSRC_MAGIC_UINT = 0x54535243;    // "TSRC" - ISRC
+        public const uint TBPM_MAGIC_UINT = 0x5442504D;    // "TBPM" - BPM
+        public const uint TKEY_MAGIC_UINT = 0x544B4559;    // "TKEY" - key
+        public const uint USLT_MAGIC_UINT = 0x55534C54;    // "USLT" - Unsynced Lyrics
+        public const uint COMM_MAGIC_UINT = 0x434F4D4D;    // "COMM" - Commentary...
+        public const uint POPM_MAGIC_UINT = 0x504F504D;    // "POPM" - Popularimeter
+        public const uint PRIV_MAGIC_UINT = 0x50524956;    // "PRIV" - Private frame
+        public const uint TSOT_MAGIC_UINT = 0x54534F54;    // "TSOT" - Title sort...
+        public const uint UFID_MAGIC_UINT = 0x55464944;    // "UFID" - Unique field
+        public const uint WXXX_MAGIC_UINT = 0x57585858;    // "WXXX" - I don't even know.
+        public const uint GEOB_MAGIC_UINT = 0x47454F42;    // "GEOB" - General encapsulated object
+        public const uint TDAT_MAGIC_UINT = 0x54444154;    // "TDAT" - Date, of my death presumably
+        public const uint RGAD_MAGIC_UINT = 0x52474144;    // "RGAD" - Replay gain adjustment
+        public const uint TLEN_MAGIC_UINT = 0x544C454E;    // "TLEN" - Tag that contains length...
+        public const uint TDRL_MAGIC_UINT = 0x5444524C;    // "TDRL" - Release time
+        public const uint MCDI_MAGIC_UINT = 0x4D434449;    // "MCDI" - CD Table of Contents
+        public const uint TFLT_MAGIC_UINT = 0x54464C54;    // "TFLT" - File type...
+        public const uint USER_MAGIC_UINT = 0x55534552;    // "USER" - Ownership or some shit
+        public const uint TOPE_MAGIC_UINT = 0x544F5045;    // "TOPE" - Original artists/performer
+        public const uint TCPM_MAGIC_UINT = 0x5443504D;    // "TCPM" - iTunes compilation marker
+        public const uint WCOP_MAGIC_UINT = 0x57434F50;    // "WCOP" - URL to copyright information.
+        public const uint WPUB_MAGIC_UINT = 0x57505542;    // "WPUB" - url to publisher
+        public const uint WOAS_MAGIC_UINT = 0x574F4153;    // "WOAS" - url to song's webpage
+        public const uint TMOO_MAGIC_UINT = 0x544D4F4F;    // "TMOO"
+        public const uint TMED_MAGIC_UINT = 0x544D4544;    // "TMED"
+        public const uint IPLS_MAGIC_UINT = 0x49504C53;    // "IPLS"
+        public const uint SYLT_MAGIC_UINT = 0x53594C54;    // "SYLT"
+        public const uint TIT1_MAGIC_UINT = 0x54495431;    // "TIT1"
+
+        // Metadata Magics (3-letter ID, big-endian)
+        public const uint BUF_MAGIC_UINT = 0x42554600;    // "BUF" - Recommended buffer size
+        public const uint CNT_MAGIC_UINT = 0x434E5400;    // "CNT" - Play counter
+        public const uint COM_MAGIC_UINT = 0x434F4D00;    // "COM" - Comments
+        public const uint CRA_MAGIC_UINT = 0x43524100;    // "CRA" - Audio encryption
+        public const uint CRM_MAGIC_UINT = 0x43524D00;    // "CRM" - Encrypted meta frame
+        public const uint ETC_MAGIC_UINT = 0x45544300;    // "ETC" - Event timing codes
+        public const uint EQU_MAGIC_UINT = 0x45515500;    // "EQU" - Equalization
+        public const uint GEO_MAGIC_UINT = 0x47454F00;    // "GEO" - General encapsulated object
+        public const uint IPL_MAGIC_UINT = 0x49504C00;    // "IPL" - Involved people list
+        public const uint LNK_MAGIC_UINT = 0x4C4E4B00;    // "LNK" - Linked information
+        public const uint MCI_MAGIC_UINT = 0x4D434900;    // "MCI" - Music CD Identifier
+        public const uint MLL_MAGIC_UINT = 0x4D4C4C00;    // "MLL" - MPEG location lookup table
+        public const uint PIC_MAGIC_UINT = 0x50494300;    // "PIC" - Attached picture
+        public const uint POP_MAGIC_UINT = 0x504F5000;    // "POP" - Popularimeter
+        public const uint REV_MAGIC_UINT = 0x52455600;    // "REV" - Reverb
+        public const uint RVA_MAGIC_UINT = 0x52564100;    // "RVA" - Relative volume adjustment
+        public const uint SLT_MAGIC_UINT = 0x534C5400;    // "SLT" - Synchronized lyric/text
+        public const uint STC_MAGIC_UINT = 0x53544300;    // "STC" - Synced tempo codes
+        public const uint TAL_MAGIC_UINT = 0x54414C00;    // "TAL" - Album/Movie/Show title
+        public const uint TBP_MAGIC_UINT = 0x54425000;    // "TBP" - BPM (Beats Per Minute)
+        public const uint TCM_MAGIC_UINT = 0x54434D00;    // "TCM" - Composer
+        public const uint TCO_MAGIC_UINT = 0x54434F00;    // "TCO" - Content type
+        public const uint TCR_MAGIC_UINT = 0x54435200;    // "TCR" - Copyright message
+        public const uint TDA_MAGIC_UINT = 0x54444100;    // "TDA" - Date
+        public const uint TDY_MAGIC_UINT = 0x54445900;    // "TDY" - Playlist delay
+        public const uint TEN_MAGIC_UINT = 0x54454E00;    // "TEN" - Encoded by
+        public const uint TFT_MAGIC_UINT = 0x54465400;    // "TFT" - File type
+        public const uint TIM_MAGIC_UINT = 0x54494D00;    // "TIM" - Time
+        public const uint TKE_MAGIC_UINT = 0x544B4500;    // "TKE" - Initial key
+        public const uint TLA_MAGIC_UINT = 0x544C4100;    // "TLA" - Language(s)
+        public const uint TLE_MAGIC_UINT = 0x544C4500;    // "TLE" - Length
+        public const uint TMT_MAGIC_UINT = 0x544D5400;    // "TMT" - Media type
+        public const uint TOA_MAGIC_UINT = 0x544F4100;    // "TOA" - Original artist(s)/performer(s)
+        public const uint TOF_MAGIC_UINT = 0x544F4600;    // "TOF" - Original filename
+        public const uint TOL_MAGIC_UINT = 0x544F4C00;    // "TOL" - Original Lyricist(s)/text writer(s)
+        public const uint TOR_MAGIC_UINT = 0x544F5200;    // "TOR" - Original release year
+        public const uint TOT_MAGIC_UINT = 0x544F5400;    // "TOT" - Original album/Movie/Show title
+        public const uint TP1_MAGIC_UINT = 0x54503100;    // "TP1" - Lead artist(s)/Lead performer(s)...
+        public const uint TP2_MAGIC_UINT = 0x54503200;    // "TP2" - Band/Orchestra/Accompaniment
+        public const uint TP3_MAGIC_UINT = 0x54503300;    // "TP3" - Conductor/Performer refinement
+        public const uint TP4_MAGIC_UINT = 0x54503400;    // "TP4" - Interpreted, remixed...
+        public const uint TPA_MAGIC_UINT = 0x54504100;    // "TPA" - Part of a set
+        public const uint TPB_MAGIC_UINT = 0x54504200;    // "TPB" - Publisher
+        public const uint TRC_MAGIC_UINT = 0x54524300;    // "TRC" - ISRC
+        public const uint TRD_MAGIC_UINT = 0x54524400;    // "TRD" - Recording dates
+        public const uint TRK_MAGIC_UINT = 0x54524B00;    // "TRK" - Track number/Position in set
+        public const uint TSI_MAGIC_UINT = 0x54534900;    // "TSI" - Size
+        public const uint TSS_MAGIC_UINT = 0x54535300;    // "TSS" - Software/hardware and settings...
+        public const uint TT1_MAGIC_UINT = 0x54543100;    // "TT1" - Content group description
+        public const uint TT2_MAGIC_UINT = 0x54543200;    // "TT2" - Title/Songname/Content description
+        public const uint TT3_MAGIC_UINT = 0x54543300;    // "TT3" - Subtitle/Description refinement
+        public const uint TXT_MAGIC_UINT = 0x54585400;    // "TXT" - Lyricist/text writer
+        public const uint TXX_MAGIC_UINT = 0x54585800;    // "TXX" - User defined text information frame
+        public const uint TYE_MAGIC_UINT = 0x54594500;    // "TYE" - Year
+        public const uint UFI_MAGIC_UINT = 0x55464900;    // "UFI" - Unique file identifier
+        public const uint ULT_MAGIC_UINT = 0x554C5400;    // "ULT" - Unsynchronized lyric/text transcription
+        public const uint WAF_MAGIC_UINT = 0x57414600;    // "WAF" - Official audio file webpage
+        public const uint WAR_MAGIC_UINT = 0x57415200;    // "WAR" - Official artist/performer webpage
+        public const uint WAS_MAGIC_UINT = 0x57415300;    // "WAS" - Official audio source webpage
+        public const uint WCM_MAGIC_UINT = 0x57434D00;    // "WCM" - Commercial information
+        public const uint WCP_MAGIC_UINT = 0x57435000;    // "WCP" - Copyright/Legal information
+        public const uint WPB_MAGIC_UINT = 0x57504200;    // "WPB" - Publishers official webpage
+        public const uint WXX_MAGIC_UINT = 0x57585800;    // "WXX" - User defined URL link frame
+
+        public const uint ZERO_UINT = 0u;
+
 
         // Probably more to come?...
     }
