@@ -150,9 +150,13 @@ namespace Mp3ParserCliExample
             {
                 if (isVerbose)
                 {
-                    if (ex is InvalidHeaderException exv)
+                    if (ex is InvalidHeaderException exh)
                     {
-                        WriteError($"Error processing {filePath}: {exv.Message} : At position {exv.FailedPosition} : Header Hex {Convert.ToHexString(exv.FailedBytes)}");
+                        WriteError($"Error processing {filePath}: {exh.Message} : At position {exh.FailedPosition} : Header Hex {Convert.ToHexString(exh.FailedBytes)}");
+                    }
+                    else
+                    {
+                        WriteError($"Error processing {filePath}: {ex.Message} \n {ex.StackTrace}");
                     }
                 }
                 else

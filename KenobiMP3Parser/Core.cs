@@ -15,7 +15,7 @@ namespace KenobiMp3Parser
         private const int MaxFailedFrames = 1024;
         private const int MaxConsecutiveFailedFrames = 6;
         private const int MaxStackAllocSize = 2048;
-
+        const int MaxHeaderFrameBytes = 2 * 1024 * 1024;
         private static int GetMp3Bitrate(int bitrateIndex, int version, int layer)
         {
             if (bitrateIndex <= 0 || bitrateIndex >= 15) return -1;
@@ -285,7 +285,16 @@ namespace KenobiMp3Parser
                 else if (tagId.SequenceEqual(TKE_MAGIC_SPAN))
                     metadata.Key = GetDataFromTextHeaderFrame(stream, frameSize, tagId);
                 else
-                    stream.Position += frameSize;
+                {
+                    if (frameSize >= 0 && frameSize <= MaxHeaderFrameBytes)
+                    {
+                        stream.Position += frameSize;
+                    }
+                    else
+                    {
+                        stream.Position += 16;
+                    }
+                }
             }
         }
 
@@ -351,7 +360,16 @@ namespace KenobiMp3Parser
                 else if (tagId.SequenceEqual(TKEY_MAGIC_SPAN))
                     metadata.Key = GetDataFromTextHeaderFrame(stream, frameSize, tagId);
                 else
-                    stream.Position += frameSize;
+                {
+                    if (frameSize >= 0 && frameSize <= MaxHeaderFrameBytes)
+                    {
+                        stream.Position += frameSize;
+                    }
+                    else
+                    {
+                        stream.Position += 16;
+                    }
+                }
             }
         }
         private static void ParseIDv22TagsUint(Stream stream, IDv2Metadata metadata, long endPosition, int vByte)
