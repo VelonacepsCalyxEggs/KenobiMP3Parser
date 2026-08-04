@@ -12,7 +12,6 @@ namespace KenobiMp3Parser.Classes
         public int SampleRate { get; init; }
         public int SamplesPerFrame { get; init; }
         public int FrameSize { get; init; }
-
         public override string ToString()
         {
             StringBuilder sb = new();
@@ -25,6 +24,11 @@ namespace KenobiMp3Parser.Classes
             sb.AppendLine($"MP3 Frame Layer: {Layer}");
             return sb.ToString();
         }
+    }
+
+    public enum FrameStatus : byte
+    {
+        SUCCESS, INVALID_VERSION, INVALID_LAYER, INVALID_BITRATE, INVALID_SAMPLE
     }
 
     public readonly record struct Mp3Header

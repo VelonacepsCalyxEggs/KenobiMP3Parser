@@ -1,19 +1,20 @@
 ﻿using KenobiMp3Parser.Classes;
-using KenobiMp3Parser.Constants;
 using KenobiMp3Parser.Exceptions;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO.Hashing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using static KenobiMp3Parser.Constants.Spans;
-using static KenobiMp3Parser.Constants.Uints;
 using static KenobiMp3Parser.Constants.Tables;
+using static KenobiMp3Parser.Constants.Uints;
 namespace KenobiMp3Parser
 {
     public static class Mp3MetadataParser
     {
-        private const int MaxFailedFrames = 1024;
+        private const int MaxFailedFrames = 128;
         private const int MaxConsecutiveFailedFrames = 6;
+        private const int MaxAudioFrameSize = 1441;
         private const int MaxStackAllocSize = 2048;
         const int MaxHeaderFrameBytes = 2 * 1024 * 1024;
         private static int GetMp3Bitrate(int bitrateIndex, int version, int layer)
@@ -68,11 +69,10 @@ namespace KenobiMp3Parser
                 column = 3;
             return Mp3SampleRateTable[sampleRateIndex, column];
         }
-        // TODO: Make this a TryReadMp3Frame so it doesn't throw exceptions, as they might be expensive.
-        // Instead, I think adding a byte enum into Mp3Frame to indicate it's status (i.e. why it failed) is a good idea
-        // and using BinaryPrimitives to convert the header into a uint is most likely faster than doing .toArray on a Span<Byte>
-        private static Mp3Frame ReadMp3Frame(Stream stream)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadMp3Frame(Stream stream, out Mp3Frame frame, out FrameStatus status)
         {
+            Unsafe.SkipInit(out frame);
             Span<byte> header = stackalloc byte[4];
             stream.ReadExactly(header);
             //Console.WriteLine($"Full Header: {BitConverter.ToString(header)}");
@@ -83,13 +83,25 @@ namespace KenobiMp3Parser
             int sampleBits = header[2] >> 2 & 0b11;
             int pBit = header[2] >> 1 & 0b01;
             if (vBits == 0b01)
-                throw new InvalidHeaderException(header.ToArray(), stream.Position, "Version bits invalid.");
+            {
+                status = FrameStatus.INVALID_VERSION;
+                return false;
+            }
             if (lBits == 0b00)
-                throw new InvalidHeaderException(header.ToArray(), stream.Position, "Layer bits invalid.");
+            {
+                status = FrameStatus.INVALID_LAYER;
+                return false;
+            }
             if (bitrateIndex == 0b1111 || bitrateIndex == 0b0000)
-                throw new InvalidHeaderException(header.ToArray(), stream.Position, "Bitrate index invalid.");
+            {
+                status = FrameStatus.INVALID_BITRATE;
+                return false;
+            }
             if (sampleBits == 0b11)
-                throw new InvalidHeaderException(header.ToArray(), stream.Position, "Sample bits invalid.");
+            {
+                status = FrameStatus.INVALID_SAMPLE;
+                return false;
+            }
             //if (crcProtect == 0b00)
             //Console.WriteLine("Has CRC");
             Mp3Version version = vBits switch
@@ -98,7 +110,7 @@ namespace KenobiMp3Parser
                 0b01 => Mp3Version.reserved,
                 0b10 => Mp3Version.MPEGVersion2,
                 0b11 => Mp3Version.MPEGVersion1,
-                _ => throw new NotSupportedException()
+                _ => throw new NotImplementedException(),
             };
             Mp3Layer layer = lBits switch
             {
@@ -123,17 +135,19 @@ namespace KenobiMp3Parser
                 frameSize = ((samplesPerFrame / 8) * bitrate / sampleRate) + padding;
             }
             //stream.Position -= 4;
-            return new Mp3Frame
+            status = FrameStatus.SUCCESS;
+            frame = new Mp3Frame
             {
                 Version = version,
                 Layer = layer,
+                Bitrate = bitrate,
+                SampleRate = sampleRate,
+                SamplesPerFrame = samplesPerFrame,
+                FrameSize = frameSize,
                 HasCrc = crcProtect == 0,
                 Padding = padding,
-                SamplesPerFrame = samplesPerFrame,
-                SampleRate = sampleRate,
-                Bitrate = bitrate,
-                FrameSize = frameSize,
             };
+            return true;
         }
         private static int ReadSynchsafeInt32(byte[] bytes)
         {
@@ -698,22 +712,21 @@ namespace KenobiMp3Parser
                     if ((next & 0xE0) == 0xE0)
                     {
                         long startPos = stream.Position - 2;
-                        try
+                        stream.Position = startPos;
+                        // Check if we can read the header.
+                        if (startPos + 4 > stream.Length)
                         {
-                            stream.Position = startPos;
-                            // Check if we can read the header.
-                            if (startPos + 4 > stream.Length)
-                            {
-                                break;
-                            }
-                            Mp3Frame mp3Frame = ReadMp3Frame(stream);
+                            break;
+                        }
+                        if (TryReadMp3Frame(stream, out Mp3Frame mp3Frame, out FrameStatus status))
+                        {
                             if (state.HasPrevFrame && mp3Frame.Version != state.PrevFrame.Version)
                             {
                                 // Skip possibly garbage frame and keep scanning.
                                 stream.Position = startPos + 1; // move one byte forward
                                 state.RegisterFrameError(true);
                                 if (state.FailedFramesConsecutive > MaxConsecutiveFailedFrames)
-                                    throw new InvalidDataException($"Too many consecutive invalid frames. (>{MaxConsecutiveFailedFrames}");
+                                    throw new InvalidFileException(status, $"Too many consecutive invalid frames. (>{MaxConsecutiveFailedFrames}");
                                 state.PreviousFailed = true;
                                 continue;
                             }
@@ -727,50 +740,23 @@ namespace KenobiMp3Parser
                             // I think this will support VBR files, but it needs to identify them for accurate bitrate (either calculate average or just set 0).
                             // Read the actual frame data for hashing
                             stream.Position = startPos;
-                            if (mp3Frame.FrameSize > 1440)
-                                throw new InvalidDataException("The entire discography of Mozart was stored in one MP3 frame.");
+                            if (mp3Frame.FrameSize > MaxAudioFrameSize)
+                                throw new InvalidFileException(status, "The entire discography of Mozart was stored in one MP3 frame.");
                             Span<byte> frameBuffer = new byte[mp3Frame.FrameSize];
                             stream.ReadExactly(frameBuffer);
 
                             xxHash.Append(frameBuffer);
                             state.RegisterValidFrame(mp3Frame);
                         }
-                        // I realize that I might want to get rid of this looped catch block and make it state managed instead. Will see if it actually is better if it were the case.
-                        catch (ArgumentException)
+                        else
                         {
                             // If a false sync, just move one byte forward from the start
                             stream.Position = startPos + 1;
                             state.RegisterFrameError(false);
                             if (state.FailedFrames == MaxFailedFrames || state.FailedFramesConsecutive == MaxConsecutiveFailedFrames)
                             {
-                                Console.WriteLine("All frames failed.");
-                                throw;
+                                throw new InvalidFileException(status, "Too many invalid frames.");
                             }
-                        }
-                        catch (InvalidHeaderException)
-                        {
-                            stream.Position = startPos + 1;
-                            state.RegisterFrameError(false);
-                            if (state.FailedFrames == MaxFailedFrames || state.FailedFramesConsecutive == MaxConsecutiveFailedFrames)
-                            {
-                                Console.WriteLine("All frames failed.");
-                                throw;
-                            }
-                        }
-                        catch (EndOfStreamException ex)
-                        {
-                            Console.WriteLine($"Fake FF FE frame at the end of the file.: {ex}");
-                            throw;
-                        }
-                        catch (InvalidDataException)
-                        {
-                            Console.WriteLine("Critical error.");
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Unhandled exception occured while reading file: {ex}");
-                            throw;
                         }
                     }
                 }
