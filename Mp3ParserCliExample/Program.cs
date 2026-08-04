@@ -153,7 +153,11 @@ namespace Mp3ParserCliExample
                     if (ex is InvalidFileException exh)
                     {
                         WriteError($"Error processing {filePath}: {exh.Message}");
-                        //WriteError(exh.Status.ToString());
+                        WriteError(exh.Status.ToString());
+                    }
+                    else
+                    {
+                        WriteError($"Error processing {filePath}: {ex.Message} \n {ex.StackTrace}");
                     }
                 }
                 else
