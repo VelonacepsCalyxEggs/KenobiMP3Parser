@@ -71,7 +71,7 @@ namespace KenobiMp3Parser.Classes
         public string? Conductor { get; set; }
         public string? TrackNumber { get; set; }
         public string? DiscNumber { get; set; }
-        public string? Genre { get; set; }
+        public string[]? Genres { get; set; }
         public string? ISRC { get; set; }
         public string? Composer { get; set; }
         public string? Year { get; set; }
@@ -100,7 +100,7 @@ namespace KenobiMp3Parser.Classes
             AppendIfNotNull(sb, nameof(Conductor), Conductor);
             AppendIfNotNull(sb, nameof(TrackNumber), TrackNumber);
             AppendIfNotNull(sb, nameof(DiscNumber), DiscNumber);
-            AppendIfNotNull(sb, nameof(Genre), Genre);
+            AppendIfNotNull(sb, nameof(Genres), Genres != null ? string.Join(", ", Genres) : null);
             AppendIfNotNull(sb, nameof(ISRC), ISRC);
             AppendIfNotNull(sb, nameof(Composer), Composer);
             AppendIfNotNull(sb, nameof(Year), Year);
@@ -134,7 +134,7 @@ namespace KenobiMp3Parser.Classes
             if (!string.IsNullOrEmpty(Album)) parts.Add($"Album: {Album}");
             if (Artists != null && Artists.Length > 0) parts.Add($"Artists: {string.Join(", ", Artists)}");
             if (!string.IsNullOrEmpty(Year)) parts.Add($"Year: {Year}");
-            if (!string.IsNullOrEmpty(Genre)) parts.Add($"Genre: {Genre}");
+            if (Genres != null && Genres.Length > 0) parts.Add($"Genres: {string.Join(", ", Genres)}");
             return string.Join(" | ", parts);
         }
     }
